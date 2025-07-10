@@ -1,53 +1,75 @@
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Scanner;
 
 public class FacebookAutoMessenger {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws Exception {
 
-        // ✅ ChromeDriver path
+
         System.setProperty("webdriver.chrome.driver", "C:/chromedriver/chromedriver.exe");
 
-        // ✅ Message send time: 1:07 AM
-        LocalTime targetTime = LocalTime.of(1, 7);
-        System.out.println("🕒 অপেক্ষা করা হচ্ছে ১:০৭ AM পর্যন্ত...");
 
-        // ✅ Time wait loop
-        while (true) {
-            LocalTime now = LocalTime.now();
-            if (!now.isBefore(targetTime)) break;
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("🕒 Enter time to send message (HH:mm): ");
+        String timeInput = scanner.nextLine();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("H:mm");
+        LocalTime targetTime = LocalTime.parse(timeInput, formatter);
+
+        System.out.print("💬 Enter your message: ");
+        String message = scanner.nextLine();
+
+        System.out.print("🔁 How many times to send? ");
+        int repeat = scanner.nextInt();
+        scanner.nextLine(); //  newline
+
+
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--remote-allow-origins=*");
+        options.addArguments("user-data-dir=C:/Users/HP/AppData/Local/Google/Chrome/User Data/AutoMessageProfile");
+        options.addArguments("profile-directory=Default");
+
+
+        System.out.println("⌛ Waiting for exact time: " + targetTime);
+        while (LocalTime.now().isBefore(targetTime)) {
             Thread.sleep(1000);
         }
-
-        // ✅ Clean Profile setup
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--remote-allow-origins=*");  // important for latest selenium
-        options.addArguments("user-data-dir=C:/Users/HP/selenium-profile");  // নতুন clean profile path
 
         WebDriver driver = new ChromeDriver(options);
 
         try {
-            // ✅ Open Chat
-            driver.get("https://www.facebook.com/messages/t/md.mirajkhondokarchoyon");
-            System.out.println("✅ ফেসবুক চ্যাট লোড হচ্ছে...");
-            Thread.sleep(7000);  // পেজ লোডের সময়
 
-            // ✅ Message Box select
-            By messageBox = By.xpath("//div[@contenteditable='true' and @role='combobox']");
-            driver.findElement(messageBox).sendKeys("হ্যালো চয়ন ভাই 🌟 এটা SM Kafi ভাইয়ের পক্ষ থেকে একটি অটো-ম্যাসেজ ✨");
-            Thread.sleep(1000);
-            driver.findElement(messageBox).sendKeys("\n");  // Enter key
-            System.out.println("📨 ম্যাসেজ পাঠানো হয়েছে!");
+            driver.get("https://www.facebook.com/messages/t/md.mirajkhondokarchoyon");
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+            WebElement messageBox = wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@aria-label='Message']"))
+            );
+
+
+            for (int i = 1; i <= repeat; i++) {
+                System.out.println("📨 Sending message " + i + " of " + repeat);
+                for (char c : message.toCharArray()) {
+                    messageBox.sendKeys(Character.toString(c));
+                    Thread.sleep(100);
+                }
+                messageBox.sendKeys(Keys.ENTER);
+                Thread.sleep(1500);
+            }
+
+            System.out.println("✅ All messages sent successfully!");
 
         } catch (Exception e) {
-            System.out.println("❌ কোনো সমস্যা হয়েছে:");
+            System.out.println("❌ Something went wrong:");
             e.printStackTrace();
         } finally {
-            Thread.sleep(3000);
+            Thread.sleep(3000); 
             driver.quit();
         }
     }
